@@ -8,8 +8,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "file-service": "file:"
-  }
+    "aws-sdk": "^2.1691.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "file-service": "file:",
+    "multer": "^1.4.5-lts.1"
+  },
+  "description": ""
 }

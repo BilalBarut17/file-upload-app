@@ -5,18 +5,28 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import AWS from 'aws-sdk';
-import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid'; 
-import { File } from './controllers/models/file'; // File modelini import et
+import { MongoClient } from 'mongodb'; 
+import { v4 as uuidv4 } from 'uuid';
 
-dotenv.config(); 
+dotenv.config();
 
-      //---- MongoDB connection
+//---- MongoDB connection
 const mongoURI = process.env.MONGO_CONNECTION_URL || 'mongodb://localhost:27017/your_database_name';
+const client = new MongoClient(mongoURI,)
+let db: any;
 
-mongoose.connect(mongoURI)
-    .then(() => console.log('MongoDB bağlantısı başarılı.'))
-    .catch(err => console.error('MongoDB bağlantısı hatası:', err));
+// MongoDB'ye bağlan
+async function connectDB() {
+    try {
+        await client.connect();
+        db = client.db();
+        console.log('MongoDB bağlantısı başarılı.');
+    } catch (err) {
+        console.error('MongoDB bağlantısı hatası:', err);
+    }
+}
+
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,7 +37,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type'],
 }));
 
-    // AWS S3 konfigiration
+// AWS S3 configuration
 AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY,
     secretAccessKey: process.env.AWS_SECRET_KEY,
@@ -36,21 +46,21 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-     // Eğer uploads dizini yoksa oluştur
+// Eğer uploads dizini yoksa oluştur
 const uploadDir = path.join(__dirname, '../uploads');
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-// Multer settings
+// Multer ayarları
 const storage = multer.memoryStorage();
 const upload = multer({
     storage,
     limits: { fileSize: 1024 * 1024 * 5 }, // Maksimum 5MB
 });
 
-//    Sağlık kontrolü endpoint'i
+// Sağlık kontrolü endpoint'i
 app.get("/health", (req: Request, res: Response) => {
     return res.status(200).json({ state: "Healthy!" });
 });
@@ -61,7 +71,7 @@ app.post('/upload', upload.single('file'), async (req: Request, res: Response) =
         return res.status(400).send('No file uploaded.');
     }
 
-    //     UUID ile benzersiz dosya ismi oluşturuluyor
+    // UUID ile benzersiz dosya ismi oluşturuluyor
     const uniqueFileName = `${uuidv4()}-${req.file.originalname}`;
 
     const params = {
@@ -72,22 +82,24 @@ app.post('/upload', upload.single('file'), async (req: Request, res: Response) =
     };
 
     try {
-        // const s3Data = await s3.upload(params).promise(); // S3'e dosyayı yükle ve promisify ile bekle
-        const fileUrl = `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`;
-
+        // S3'e dosyayı yükle ve promisify ile bekle
+        const s3Data = await s3.upload(params).promise();
+        
         // MongoDB'ye dosya bilgilerini kaydet
-        const newFile = new File({
+        const newFile = {
             fileName: uniqueFileName,  // Dosya adı
-            filePath: fileUrl,         // S3'teki dosya URL'si
+            filePath: s3Data.Location,  // S3'teki dosya URL'si
             uploadDate: new Date(),    // Yükleme tarihi
-        });
+        };
 
-        await newFile.save();  // Dosya bilgisini MongoDB'ye kaydet
+        const filesCollection = db.collection('files'); // 'files' adında bir koleksiyon kullanıyoruz
+        await filesCollection.insertOne(newFile);  // Dosya bilgisini MongoDB'ye kaydet
 
-        const result = await File.findById(newFile.id)
+        // Kayıtlı dosyayı MongoDB'den al
+        const result = await filesCollection.findOne({ fileName: uniqueFileName });
 
         return res.status(200).json({
-            location: fileUrl, 
+            location: s3Data.Location, 
             message: "File uploaded and saved to MongoDB successfully!",
             result,
         });

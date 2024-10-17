@@ -18,6 +18,7 @@
     "express": "^4.21.1",
     "file-upload-app": "file:",
     "fs": "^0.0.1-security",
+    "mongodb": "^6.9.0",
     "mongoose": "^8.7.1",
     "multer": "^1.4.5-lts.1",
     "path": "^0.12.7",

@@ -1,14 +1,16 @@
 {
-    "compilerOptions": {
-      "target": "ES6",
-      "module": "commonjs",
-      "strict": true,
-      "esModuleInterop": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "outDir": "./dist"
-    },
-    "include": ["src/**/*.ts"],
-    "exclude": ["node_modules"]
-  }
-  
+  "compilerOptions": {
+    "target": "ES6",                                 // Hedef JavaScript sürümü
+    "module": "commonjs",                            // Modül sistemi
+    "rootDir": "./src",                              // Kaynak dosyalarının bulunduğu klasör
+    "outDir": "./dist",                              // Derleme çıktısının yazılacağı klasör
+    "strict": true,                                  // Sıkı tür denetimi
+    "esModuleInterop": true,                         // ES modül sistemi desteği
+    "skipLibCheck": true,                            // Kütüphane dosyalarını kontrol etmeme
+    "forceConsistentCasingInFileNames": true,      // Dosya adlarında tutarlılık
+    "resolveJsonModule": true,                       // JSON modüllerini çözümleme
+    "noImplicitAny": true                            // Belirsiz tür kullanımını engelle
+  },
+  "include": ["src/**/*.ts"],                        // Derlenecek dosyalar
+  "exclude": ["node_modules", "dist"]               // Dışlanacak dosyalar
+}
